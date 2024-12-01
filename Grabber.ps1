@@ -1,6 +1,9 @@
 # Powershell Script to automate getting logs for reporting on weekly meeting
 # Written by ----=====|ePiRoC_nIcK|=====----
 
+# Surface Data Location
+$Surface_Manager_data_loc = "D:\ServerDataRoot_Backup\"
+
 # Where the log file will save
 $time_Stamp = Get-Date -UFormat "%Y%m%d_%H%M%S"
 $script_loc = Get-Location
@@ -31,18 +34,20 @@ $current_date = $start_date
 Write-Host "Getting Machine Logs Now"
 
 
-$Archive_save_path = "$($script_loc)\$($machines["DR3132"])_RRA_LOGS_$($time_Stamp).zip"
+$Archive_save_path = "$($script_loc)\DR3132_RRA_LOGS_$($time_Stamp).zip"
 while($current_date -le $end_date){
     try {
         $year = Get-Date $current_date -Format yyyy
         $month = Get-Date $current_date -Format MM
         $day = Get-Date $current_date -Format dd
-        $data_path = "C:\Users\aucnh\Documents\Projects\D65 Autonomous\Logging\Surface Manager Data\ServerDataRoot_Backup\$($machines[$machine])\From Machine\prodout\RIGEVENT\$($year)-$($month)\$($day)"
+        $data_path = "$($Surface_Manager_data_loc)$($machines[$machine])\From Machine\prodout\RIGEVENT\$($year)-$($month)\$($day)"
         Get-ChildItem -Path $data_path -ErrorAction Stop | Compress-Archive -update -DestinationPath $Archive_save_path
+        Write-Host "Found Logs $($machines[$machine]) on $($month)"
+        Write-Host $data_path
     } catch [System.Management.Automation.ItemNotFoundException]{
         Write-Host "Exception caught - No path"
         }
-    Write-Host "Found Logs $($machines[$machine]) on $($month)"
-    Write-Host $data_path
+    
+    
     $current_date = $current_date.AddDays(1)
 }
