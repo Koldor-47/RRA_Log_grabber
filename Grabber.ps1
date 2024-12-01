@@ -3,7 +3,7 @@
 
 # Where the log file will save
 $time_Stamp = Get-Date -UFormat "%Y%m%d_%H%M%S"
-
+$script_loc = Get-Location
 
 $machines = @{
     'DR3132' = "8992013064"
@@ -28,28 +28,21 @@ foreach ($machine in $machines.Keys){
 
 $current_date = $start_date
 
-foreach ($machine in $machines.keys){
-    $Archive_save_path = "C:\Users\aucnh\Desktop\$($machine)_RRA_LOGS_$($time_Stamp).zip"
-    while($current_date -le $end_date){
-        Write-Host $current_date
-        try {
-            $year = Get-Date $current_date -Format yyyy
-            $month = Get-Date $current_date -Format MM
-            $day = Get-Date $current_date -Format dd
-
-            $data_path = "C:\Users\aucnh\Documents\Projects\D65 Autonomous\Logging\Surface Manager Data\ServerDataRoot_Backup\$($machines[$machine])\From Machine\prodout\RIGEVENT\$($year)-$($month)\$($day)"
-            Get-ChildItem -Path $data_path -ErrorAction Stop | Compress-Archive -update -DestinationPath $Archive_save_path
+Write-Host "Getting Machine Logs Now"
 
 
-        } catch [System.Management.Automation.ItemNotFoundException]{
-            Write-Host "Exception caught - No path"
-            }
-        Write-Host "Found Logs"
-        Write-Host $data_path
-        $current_date = $current_date.AddDays(1)
-    }
+$Archive_save_path = "$($script_loc)\$($machines["DR3132"])_RRA_LOGS_$($time_Stamp).zip"
+while($current_date -le $end_date){
+    try {
+        $year = Get-Date $current_date -Format yyyy
+        $month = Get-Date $current_date -Format MM
+        $day = Get-Date $current_date -Format dd
+        $data_path = "C:\Users\aucnh\Documents\Projects\D65 Autonomous\Logging\Surface Manager Data\ServerDataRoot_Backup\$($machines[$machine])\From Machine\prodout\RIGEVENT\$($year)-$($month)\$($day)"
+        Get-ChildItem -Path $data_path -ErrorAction Stop | Compress-Archive -update -DestinationPath $Archive_save_path
+    } catch [System.Management.Automation.ItemNotFoundException]{
+        Write-Host "Exception caught - No path"
+        }
+    Write-Host "Found Logs $($machines[$machine]) on $($month)"
+    Write-Host $data_path
+    $current_date = $current_date.AddDays(1)
 }
-
-
-
-
