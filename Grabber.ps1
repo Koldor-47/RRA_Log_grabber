@@ -31,6 +31,7 @@ $script_loc = Get-Location
 #	'DR3124' = "8992012858"
 #}
 
+# Epiroc Autonomous Machines With Serial Numbers
 $machines = @{
     'DR3132' = "8992013064"
     'DR3145' = "8992014939"
@@ -39,8 +40,13 @@ $machines = @{
     'DR2137' = "8999005050"
 }
 
-
-
+# The log file types
+# MWD - Measure While drilling
+# PERF - Performance Logs, Fuel Burn
+# QUAL - Quaility DRilling log
+# RIGEVENT - Rig event logs
+# STAT - Statistics logs, Machine Hours, drilled meters
+#
 $log_types = @('MWDLOG', 'PERFLOG', 'QUALLOG', 'RIGEVENT', 'STATLOG')
 
 Write-host "Enter a Date YYYY-MM-DD"
@@ -92,9 +98,7 @@ foreach ($drill in $machines.Keys) {
                 Write-Host $data_path
             } catch [System.Management.Automation.ItemNotFoundException]{
                 Write-Host "Exception caught - No path"
-                }
-            
-            
+                }         
             $current_date = $current_date.AddDays(1)
             }
         }
