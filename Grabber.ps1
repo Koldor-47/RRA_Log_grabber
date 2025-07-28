@@ -21,11 +21,15 @@
 # Surface Data Location
 $Surface_Manager_data_loc = "D:\ServerDataRoot_Backup"
 $Surface_Manager_err_loc = "D:\ServerDataRoot_Error"
-$Test_Logs = "C:\Users\aucnh\Documents\Projects\D65 Autonomous\Logging\Surface Manager Data\ServerDataRoot_Backup"
 
 # Where the log file will save
 $time_Stamp = Get-Date -UFormat "%Y%m%d_%H%M%S"
 $script_loc = Get-Location
+
+# Added Fortescue Normal Machines
+#$machines = @{
+#	'DR3124' = "8992012858"
+#}
 
 $machines = @{
     'DR3132' = "8992013064"
@@ -35,15 +39,10 @@ $machines = @{
     'DR2137' = "8999005050"
 }
 
-# Added Fortescue Normal Machines
-#$machines = @{
-#	'DR3124' = "8992012858"
-#}
+
 
 $log_types = @('MWDLOG', 'PERFLOG', 'QUALLOG', 'RIGEVENT', 'STATLOG')
-#$log_types = @('RIGEVENT')
 
-$machines_list = @("8992013064", "8992014939", "8992015363")
 Write-host "Enter a Date YYYY-MM-DD"
 
 $start_date = Read-Host "Enter a Start Date"
@@ -54,10 +53,6 @@ $end_date = Get-Date $end_date
 
 Write-Host "starting $($start_date) and finishing $($end_date)"
 
-# Example file Path
-# 
-# D:\ServerDataRoot_Backup\8992013064\From Machine\prodout\QUALLOG\2024-10\08
-#
 foreach ($machine in $machines.Keys){
     Write-Output "$($machine) has the serial number $($machines[$machine])"
 }
@@ -89,16 +84,8 @@ foreach ($drill in $machines.Keys) {
                 $year = Get-Date $current_date -Format yyyy
                 $month = Get-Date $current_date -Format MM
                 $day = Get-Date $current_date -Format dd
-
-                # -----------===========| Using TEST Location |=================--------------------------------
-                
+              
                 $data_path = "$($drillDataPath)\$($machines[$drill])\From Machine\prodout\$($log_type)\$($year)-$($month)\$($day)"
-                
-                #
-                # Testing Path is correct
-                #
-                # Write-Host = $($data_path)
-                #
                 
                 Get-ChildItem -Path $data_path -ErrorAction Stop | Compress-Archive -update -DestinationPath $Archive_save_path
                 Write-Host "Found Logs $($machines[$drill]) on $($month)"
@@ -115,8 +102,7 @@ foreach ($drill in $machines.Keys) {
     }
 
     getDrillData "$Surface_Manager_data_loc" "good"
+    Write-Host "Collecting Error Logs"
+    getDrillData "$Surface_Manager_err_loc" "Error"
 
-    $getErrorData = Read-Host "Do you want Error log data press y"
-    if ($getErrorData -match "y") {
-        getDrillData "$Surface_Manager_err_loc" "Error"
-        }
+    Write-Host "Finished Collecting Logs"
