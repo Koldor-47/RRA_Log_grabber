@@ -36,22 +36,24 @@ catch {
 
 
 # Surface Data Location
-$Surface_Manager_data_loc = "C:\Users\aucnh\Desktop\temp_logs\RRA"
-$Surface_Manager_err_loc = "D:\ServerDataRoot_Error"
+# These need to changed to the correct RRA directory
+#
+$Surface_Manager_data_loc = "C:\Users\aucnh\Documents\Projects\D65 Autonomous\Logging\Surface Manager Data\ServerDataRoot_Backup"
+$Surface_Manager_err_loc = "C:\Users\aucnh\Documents\Projects\D65 Autonomous\Logging\Surface Manager Data\ServerDataRoot_Error"
 
 # Where the log file will save
 $script_loc = Get-Location
 
 $machines = @{
     'DR3132' = "8992013064"
-    #'DR3145' = "8992014939"
-    #'DR3149' = "8992015363"
-    #'DR3151' = "8992015365"
+    'DR3145' = "8992014939"
+    'DR3149' = "8992015363"
+    'DR3151' = "8992015365"
     'DR2137' = "8999005050"
-    '#DR3150' = "8992015369"
+    'DR3150' = "8992015369"
     'DR3152' = "8992015371"
-    #'DR3123' = "8992012689"
-    #'DR3124' = "8992012858"
+    'DR3123' = "8992012689"
+    'DR3124' = "8992012858"
 }
 
 $log_types = @('MWDLOG', 'PERFLOG', 'QUALLOG', 'RIGEVENT', 'STATLOG')
@@ -69,7 +71,10 @@ function Get-dataFiles {
     # Building a date range
     Write-Host "Calulating total days....."
     $date_range = [System.Collections.Generic.List[DateTime]]::new()
-    $log_files = [System.Collections.Generic.List[string]]::new()
+
+    $estimated_capacity = $machines.Count * $log_types.Count * $date_range.Count * 25
+    $log_files = [System.Collections.Generic.List[string]]::new($estimated_capacity)
+
     $temp_date = $start_date
     while ($temp_date -le $end_date) {
         $date_range.Add($temp_date)
@@ -83,18 +88,19 @@ function Get-dataFiles {
                 $month = $date.ToString('MM')
                 $day = $date.ToString('dd')
                 
-                $data_path = Join-Path $base_file_path "$($machines[$drill])\From Machine\prodout\$log\$year-$month\$day"
+                $data_path = "$($base_file_path)/$($machines[$drill])\From Machine\prodout\$($log)\$($year)-$($month)\$($day)"
                 $data_files = Get-ChildItem -Path $data_path -File -ErrorAction SilentlyContinue
 
                 foreach ($file in $data_files) {
                     $full_path = $file.FullName
-                    $log_files += $full_path
+                    $log_files.Add($full_path)
                 }
 
             }
         }
     }
     
+    Write-Host "Days Counted" -ForegroundColor 'Green'
     return $log_files
 }
 
@@ -103,7 +109,8 @@ function Get-logArchive {
         [string]$base_path,
         [array]$files,
         [DateTime]$start_date,
-        [DateTime]$end_date
+        [DateTime]$end_date,
+        [Bool]$isError
     )
 
     if ($files.Count -eq 0) {
@@ -111,7 +118,12 @@ function Get-logArchive {
         return
         }
     
-    $Archive_name = "RRA_logs_$($start_date.ToString('dd-MM-yyyy'))_to_$($end_date.ToString('dd-MM-yyyy')).zip"
+    if ($isError -eq 0) {
+        $Archive_name = "RRA_logs_$($start_date.ToString('dd-MM-yyyy'))_to_$($end_date.ToString('dd-MM-yyyy')).zip"
+    } else {
+        $Archive_name = "RRA_Error_logs_$($start_date.ToString('dd-MM-yyyy'))_to_$($end_date.ToString('dd-MM-yyyy')).zip"
+    }
+    
     $full_Archive_name = Join-Path $script_loc $Archive_name
     $log_archive = [System.IO.Compression.ZipFile]::Open($full_Archive_name, [System.IO.Compression.ZipArchiveMode]::Create)
     $file_progress_count = 0
@@ -143,7 +155,7 @@ $heading_2 = @"
 |_____/   )|_____/   )   /' /\  \       |:  |    /  /    ) :)\/ \          \___  \    /' /\  \\\  \/. ./  \/    |  |_____/   )
  //      /  //      /   //  __'  \       \  |___(: (____/ // //  \ ___      __/  \\  //  __'  \\.    //   // ___)_  //      / 
 |:  __   \ |:  __   \  /   /  \\  \     ( \_|:  \\        / (:   _(  _|    /" \   :)/   /  \\  \\\   /   (:      "||:  __   \ 
-|__|  \___)|__|  \___)(___/    \___)     \_______)\"_____/   \_______)    (_______/(___/    \___)\__/     \_______)|__|  \___)                                                                     
+|__|  \___)|__|  \___)(___/    \___)     \_______)\"_____/   \________)   (_______/(___/    \___)\__/     \_______)|__|  \___)                                                                     
              
 "@
 
@@ -157,12 +169,22 @@ $end_date = Read-Host "Enter a End date"
 $start_date = Get-Date $start_date
 $end_date = Get-Date $end_date 
 
-$testme = Get-dataFiles -base_file_path $Surface_Manager_data_loc -start_date $start_date -end_date $end_date
+# Get Normal Good Logs
 
-$time_taken = Measure-Command { Get-logArchive -base_path $Surface_Manager_data_loc -start_date $start_date -end_date $end_date -files $testme }
-
-Write-Host "RRA Log saving Complete" -ForegroundColor 'Green'
-
+Write-Host "Getting Good Log files" -ForegroundColor Green
+$good_logs = Get-dataFiles -base_file_path $Surface_Manager_data_loc -start_date $start_date -end_date $end_date
+$time_taken = Measure-Command { Get-logArchive -base_path $Surface_Manager_data_loc -start_date $start_date -end_date $end_date -files $good_logs -isError 0}
 Write-Host "Archiving took $($time_taken)"
+Write-Host "RRA Good Log files saved" -ForegroundColor 'Green'
+
+Write-Host "Getting bad Log files" -ForegroundColor Yellow
+$bad_logs = Get-dataFiles -base_file_path $Surface_Manager_err_loc -start_date $start_date -end_date $end_date
+$time_taken_error = Measure-Command { Get-logArchive -base_path $Surface_Manager_err_loc -start_date $start_date -end_date $end_date -files $bad_logs -isError 1 }
+Write-Host "Archiving took $($time_taken_error)"
+Write-Host "RRA bad Log files saved." -ForegroundColor Yellow
+
+
+
+
 
 
