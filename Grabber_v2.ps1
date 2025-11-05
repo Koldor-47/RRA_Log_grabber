@@ -81,27 +81,28 @@ function Get-dataFiles {
         $temp_date = $temp_date.AddDays(1)
     }
 
-    foreach ($log in $log_types) {
-        foreach ($drill in $machines.Keys) {
-            foreach ($date in $date_range) {
-                $year = $date.ToString('yyyy')
-                $month = $date.ToString('MM')
-                $day = $date.ToString('dd')
+    $log_files = $log_types | ForEach-Object {
+        $log_type = $_
+        $machines.Values | ForEach-Object {
+            $drill = $_
+
+            $date_range | ForEach-Object {
+                $path = "$($base_file_path)\$($drill)\From Machine\prodout\$($log_type)\$($_.ToString('yyyy'))-$($_.ToString('MM'))\$($_.ToString('dd'))"
                 
-                $data_path = "$($base_file_path)/$($machines[$drill])\From Machine\prodout\$($log)\$($year)-$($month)\$($day)"
-                $data_files = Get-ChildItem -Path $data_path -File -ErrorAction SilentlyContinue
-
-                foreach ($file in $data_files) {
-                    $full_path = $file.FullName
-                    $log_files.Add($full_path)
+                if (Test-Path $path){
+                    # Returns the path
+                    $path
                 }
-
             }
         }
     }
+
+    $all_files = $log_files | ForEach-Object {
+        Get-ChildItem $_ -File
+    } | Select-Object -ExpandProperty FullName
     
     Write-Host "Days Counted" -ForegroundColor 'Green'
-    return $log_files
+    return $all_files
 }
 
 function Get-logArchive {
